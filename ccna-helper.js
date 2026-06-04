@@ -1,6 +1,6 @@
 // ================================
 // CCNA 1 ITNv7 Final Exam Helper
-// Console only – no popups
+// Fixed: accepts numbers and strings
 // Usage: ccna("mot-clé") or ccna(42)
 // ================================
 
@@ -294,26 +294,28 @@
           a: "Vrai." }
     ];
 
-    // Recherche par numéro
+    // Helper: search by question number (1‑based)
     function byNumber(num) {
         if (num >= 1 && num <= qa.length) return qa[num-1];
         return null;
     }
 
-    // Recherche par mot-clé
+    // Helper: search by keyword (case‑insensitive)
     function byKeyword(keyword) {
         const kw = keyword.toLowerCase();
         return qa.filter((item, idx) => item.q.toLowerCase().includes(kw))
                  .map((item, idx) => ({ num: idx+1, q: item.q, a: item.a }));
     }
 
-    // Fonction principale exposée
+    // Main function exposed globally
     window.ccna = function(query) {
-        if (!query || query.trim() === "") {
+        // FIX: convert query to string (handles numbers directly)
+        let q = String(query).trim();
+        if (q === "") {
             console.log("Usage: ccna('numéro')  ou  ccna('mot-clé')");
             return;
         }
-        const num = parseInt(query, 10);
+        const num = parseInt(q, 10);
         if (!isNaN(num)) {
             const item = byNumber(num);
             if (item) {
@@ -322,13 +324,13 @@
                 console.log(`❌ Question ${num} non trouvée (max ${qa.length})`);
             }
         } else {
-            const results = byKeyword(query);
+            const results = byKeyword(q);
             if (results.length === 0) {
-                console.log(`❌ Aucune question contenant "${query}"`);
+                console.log(`❌ Aucune question contenant "${q}"`);
             } else if (results.length === 1) {
                 console.log(`\n📌 Question ${results[0].num}:\n${results[0].q}\n✅ Réponse:\n${results[0].a}\n`);
             } else {
-                console.log(`🔎 ${results.length} questions trouvées pour "${query}" :`);
+                console.log(`🔎 ${results.length} questions trouvées pour "${q}" :`);
                 results.slice(0, 8).forEach(r => {
                     console.log(`  ${r.num}. ${r.q.substring(0, 80)}...`);
                 });
