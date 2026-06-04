@@ -1,10 +1,10 @@
-// ================================
-// CCNA 1 ITNv7 Final Exam Helper
-// Complete Q&A database (142 questions)
-// Usage: ccna("mot-clé") or ccna(42)
-// ================================
+// =====================================================
+// CCNA 1 ITNv7 Final Exam Helper – Full Q&A (142 questions)
+// Usage: ccna(4)  or  ccna("masque réseau")
+// =====================================================
 
 (function() {
+    // ----- The complete Q&A database (from your paste) -----
     const qa = [
         { q: "Un administrateur a défini un compte d'utilisateur local avec un mot de passe secret sur le routeur R1 pour être utiliser avec SSH. Quelles sont les trois étapes supplémentaires nécessaires pour configurer R1 pour accepter uniquement les connexions SSH chiffrées ?",
           a: "Activez les sessions SSH entrantes à l'aide des commandes de ligne VTY. Configurer le nom de domaine IP. Générer les clés SSH." },
@@ -294,25 +294,66 @@
           a: "Vrai." }
     ];
 
+    // ----- Normalisation (accents, ponctuation) -----
+    function normalize(str) {
+        return str.toLowerCase()
+                  .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+                  .replace(/[^\w\s]/g, " ")                           // punctuation to spaces
+                  .replace(/\s+/g, " ").trim();
+    }
+
+    // ----- Extract significant words (ignore stop words) -----
+    const stopWords = new Set([
+        "les","des","est","que","pour","avec","une","dans","sur","par","pas","plus","peut","être","cette","cet","ces","aux","du","la","le","et","à","en","de","un","une","se","ce","ça","il","elle","on","nous","vous","ils","elles","ceci","cela","celle","celui","celles","ceux","dont","où","comme","mais","ou","donc","or","ni","car","si","alors","quand","lorsque","parce","que","quoi","dont","où","comment","pourquoi","tous","tout","toute","toutes","leurs","leur","notre","votre","mes","tes","ses","nos","vos","leurs"
+    ]);
+
+    function significantWords(str) {
+        return str.split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+    }
+
+    // ----- Search by number -----
     function byNumber(num) {
         if (num >= 1 && num <= qa.length) return qa[num-1];
         return null;
     }
 
-    function byKeyword(keyword) {
-        const kw = keyword.toLowerCase();
-        return qa.filter((item, idx) => item.q.toLowerCase().includes(kw))
-                 .map((item, idx) => ({ num: idx+1, q: item.q, a: item.a }));
+    // ----- Search by keyword (smart scoring) -----
+    function searchByPhrase(phrase) {
+        const normPhrase = normalize(phrase);
+        const queryWords = significantWords(normPhrase);
+        if (queryWords.length === 0) return [];
+
+        const scored = [];
+        for (let i = 0; i < qa.length; i++) {
+            const normQ = normalize(qa[i].q);
+            const qWords = significantWords(normQ);
+            let matches = 0;
+            for (let qw of queryWords) {
+                if (qWords.some(qw2 => qw2.includes(qw) || qw.includes(qw2))) matches++;
+            }
+            if (matches > 0) {
+                scored.push({
+                    num: i+1,
+                    q: qa[i].q,
+                    a: qa[i].a,
+                    score: matches / Math.sqrt(queryWords.length * qWords.length) // similarity
+                });
+            }
+        }
+        scored.sort((a,b) => b.score - a.score || a.num - b.num);
+        return scored;
     }
 
-    window.ccna = function(query) {
-        let q = String(query).trim();
-        if (q === "") {
-            console.log("Usage: ccna('numéro')  ou  ccna('mot-clé')");
+    // ----- Main exposed function -----
+    window.ccna = function(input) {
+        const str = String(input).trim();
+        if (str === "") {
+            console.log("Usage: ccna(numéro)  ou  ccna('phrase clé')");
             return;
         }
-        const num = parseInt(q, 10);
-        if (!isNaN(num)) {
+
+        const num = parseInt(str, 10);
+        if (!isNaN(num) && num.toString() === str) {
             const item = byNumber(num);
             if (item) {
                 console.log(`\n📌 Question ${num}:\n${item.q}\n✅ Réponse:\n${item.a}\n`);
@@ -320,21 +361,20 @@
                 console.log(`❌ Question ${num} non trouvée (max ${qa.length})`);
             }
         } else {
-            const results = byKeyword(q);
+            const results = searchByPhrase(str);
             if (results.length === 0) {
-                console.log(`❌ Aucune question contenant "${q}"`);
+                console.log(`❌ Aucune question ne correspond à "${str}"`);
             } else if (results.length === 1) {
                 console.log(`\n📌 Question ${results[0].num}:\n${results[0].q}\n✅ Réponse:\n${results[0].a}\n`);
             } else {
-                console.log(`🔎 ${results.length} questions trouvées pour "${q}" :`);
-                results.slice(0, 8).forEach(r => {
-                    console.log(`  ${r.num}. ${r.q.substring(0, 80)}...`);
+                console.log(`🔎 ${results.length} résultats pour "${str}" :`);
+                results.slice(0, 5).forEach(r => {
+                    console.log(`\n${r.num}. ${r.q.substring(0, 90)}...\n   Réponse: ${r.a.substring(0, 120)}${r.a.length>120 ? '…' : ''}`);
                 });
-                if (results.length > 8) console.log(`  ... et ${results.length-8} autres.`);
-                console.log("Utilisez ccna('numéro') pour voir la réponse complète.");
+                if (results.length > 5) console.log(`\n... et ${results.length-5} autres. Utilisez un numéro exact.`);
             }
         }
     };
 
-    console.log("✅ CCNA Helper chargé. Tapez ccna('mot-clé') ou ccna(42) dans la console.");
+    console.log("✅ CCNA Helper chargé. Tapez ccna('mot-clé') ou ccna(42)");
 })();
