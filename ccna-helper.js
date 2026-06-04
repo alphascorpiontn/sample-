@@ -340,7 +340,3 @@
 
     console.log("✅ CCNA Helper chargé. Tapez ccna('mot-clé') ou ccna(42) dans la console.");
 })();
-VM7024:341 ✅ CCNA Helper chargé. Tapez ccna('mot-clé') ou ccna(42) dans la console.
-undefined
-À quoi sert le glissement de fenêtre TCP ?
-VM7028:1 Uncaught SyntaxError: Unexpected identifier 'quoi'
