@@ -1,4 +1,9 @@
-// CCNA Helper – corrected for numbers and strings
+// ================================
+// CCNA 1 ITNv7 Final Exam Helper
+// Complete Q&A database (142 questions)
+// Usage: ccna("mot-clé") or ccna(42)
+// ================================
+
 (function() {
     const qa = [
         { q: "Un administrateur a défini un compte d'utilisateur local avec un mot de passe secret sur le routeur R1 pour être utiliser avec SSH. Quelles sont les trois étapes supplémentaires nécessaires pour configurer R1 pour accepter uniquement les connexions SSH chiffrées ?",
@@ -301,7 +306,6 @@
     }
 
     window.ccna = function(query) {
-        // Convert query to string and trim (handles numbers directly)
         let q = String(query).trim();
         if (q === "") {
             console.log("Usage: ccna('numéro')  ou  ccna('mot-clé')");
