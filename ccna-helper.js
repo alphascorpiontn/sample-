@@ -1,10 +1,12 @@
 // =====================================================
-// CCNA 1 ITNv7 Final Exam Helper – Full Q&A (142 questions)
-// Usage: ccna(4)  or  ccna("masque réseau")
+// CCNA 1 ITNv7 Final Exam Helper – Full database (142 Q&A)
+// Usage:
+//   ccna(13)                -> affiche la réponse de la question 13
+//   ccna("service HTTPS")   -> affiche la réponse correspondant au meilleur match
 // =====================================================
 
 (function() {
-    // ----- The complete Q&A database (from your paste) -----
+    // ---------- COMPLETE Q&A DATABASE (142 questions) ----------
     const qa = [
         { q: "Un administrateur a défini un compte d'utilisateur local avec un mot de passe secret sur le routeur R1 pour être utiliser avec SSH. Quelles sont les trois étapes supplémentaires nécessaires pour configurer R1 pour accepter uniquement les connexions SSH chiffrées ?",
           a: "Activez les sessions SSH entrantes à l'aide des commandes de ligne VTY. Configurer le nom de domaine IP. Générer les clés SSH." },
@@ -31,7 +33,7 @@
         { q: "Mécanisme pour empêcher un paquet IPv4 de voyager sans fin ?",
           a: "Il décrémente la valeur du champ TTL de 1. Si résultat = 0, il rejette le paquet et envoie 'Time Exceeded'." },
         { q: "Service fourni par HTTPS ?",
-          a: "Utilise le cryptage pour sécuriser l'échange de texte, images, sons et vidéos sur le Web." },
+          a: "Utilise le cryptage pour sécuriser l'échange de texte, d'images graphiques, de sons et de vidéos sur le Web." },
         { q: "2 caractéristiques d'une table de routage IPv4 ?",
           a: "Stocke des informations sur les chemins dérivés des interfaces de routeur actives. Si une route statique par défaut est configurée, code source S." },
         { q: "Valeur diminuée par chaque routeur dans en-tête IPv4 ?",
@@ -294,87 +296,69 @@
           a: "Vrai." }
     ];
 
-    // ----- Normalisation (accents, ponctuation) -----
+    // ---------- Helper functions ----------
     function normalize(str) {
         return str.toLowerCase()
-                  .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
-                  .replace(/[^\w\s]/g, " ")                           // punctuation to spaces
+                  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                  .replace(/[^\w\s]/g, " ")
                   .replace(/\s+/g, " ").trim();
     }
 
-    // ----- Extract significant words (ignore stop words) -----
     const stopWords = new Set([
-        "les","des","est","que","pour","avec","une","dans","sur","par","pas","plus","peut","être","cette","cet","ces","aux","du","la","le","et","à","en","de","un","une","se","ce","ça","il","elle","on","nous","vous","ils","elles","ceci","cela","celle","celui","celles","ceux","dont","où","comme","mais","ou","donc","or","ni","car","si","alors","quand","lorsque","parce","que","quoi","dont","où","comment","pourquoi","tous","tout","toute","toutes","leurs","leur","notre","votre","mes","tes","ses","nos","vos","leurs"
+        "quel","quels","quelle","quelles","est","sont","pour","par","avec","sans","dans","sur","chez","de","des","du","la","le","les","un","une","à","en","et","ou","donc","or","ni","car","mais","si","alors","lorsque","que","qui","dont","où","comment","pourquoi","combien","ce","cet","cette","ces","il","elle","on","nous","vous","ils","elles","ceci","cela","ça","là","ici"
     ]);
 
-    function significantWords(str) {
+    function keywords(str) {
         return str.split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
     }
 
-    // ----- Search by number -----
+    // ---------- Search functions ----------
     function byNumber(num) {
-        if (num >= 1 && num <= qa.length) return qa[num-1];
+        if (num >= 1 && num <= qa.length) return qa[num-1].a;
         return null;
     }
 
-    // ----- Search by keyword (smart scoring) -----
-    function searchByPhrase(phrase) {
-        const normPhrase = normalize(phrase);
-        const queryWords = significantWords(normPhrase);
-        if (queryWords.length === 0) return [];
-
-        const scored = [];
+    function byPhrase(phrase) {
+        const norm = normalize(phrase);
+        const kw = keywords(norm);
+        if (kw.length === 0) return null;
+        let best = null, bestScore = 0;
         for (let i = 0; i < qa.length; i++) {
-            const normQ = normalize(qa[i].q);
-            const qWords = significantWords(normQ);
+            const qNorm = normalize(qa[i].q);
+            const qKw = keywords(qNorm);
             let matches = 0;
-            for (let qw of queryWords) {
-                if (qWords.some(qw2 => qw2.includes(qw) || qw.includes(qw2))) matches++;
+            for (let w of kw) {
+                if (qNorm.includes(w)) matches++;
             }
-            if (matches > 0) {
-                scored.push({
-                    num: i+1,
-                    q: qa[i].q,
-                    a: qa[i].a,
-                    score: matches / Math.sqrt(queryWords.length * qWords.length) // similarity
-                });
+            let score = matches / Math.max(1, kw.length);
+            // bonus if the whole phrase is contained in the question or vice versa
+            if (norm.includes(qNorm) || qNorm.includes(norm)) score = 1;
+            if (score > bestScore) {
+                bestScore = score;
+                best = qa[i].a;
             }
         }
-        scored.sort((a,b) => b.score - a.score || a.num - b.num);
-        return scored;
+        return best;
     }
 
-    // ----- Main exposed function -----
+    // ---------- Main exported function ----------
     window.ccna = function(input) {
         const str = String(input).trim();
         if (str === "") {
-            console.log("Usage: ccna(numéro)  ou  ccna('phrase clé')");
+            console.log("Usage: ccna(13)  ou  ccna('service HTTPS')");
             return;
         }
-
         const num = parseInt(str, 10);
         if (!isNaN(num) && num.toString() === str) {
-            const item = byNumber(num);
-            if (item) {
-                console.log(`\n📌 Question ${num}:\n${item.q}\n✅ Réponse:\n${item.a}\n`);
-            } else {
-                console.log(`❌ Question ${num} non trouvée (max ${qa.length})`);
-            }
+            const ans = byNumber(num);
+            if (ans) console.log(ans);
+            else console.log(`❌ Question ${num} non trouvée (max ${qa.length})`);
         } else {
-            const results = searchByPhrase(str);
-            if (results.length === 0) {
-                console.log(`❌ Aucune question ne correspond à "${str}"`);
-            } else if (results.length === 1) {
-                console.log(`\n📌 Question ${results[0].num}:\n${results[0].q}\n✅ Réponse:\n${results[0].a}\n`);
-            } else {
-                console.log(`🔎 ${results.length} résultats pour "${str}" :`);
-                results.slice(0, 5).forEach(r => {
-                    console.log(`\n${r.num}. ${r.q.substring(0, 90)}...\n   Réponse: ${r.a.substring(0, 120)}${r.a.length>120 ? '…' : ''}`);
-                });
-                if (results.length > 5) console.log(`\n... et ${results.length-5} autres. Utilisez un numéro exact.`);
-            }
+            const ans = byPhrase(str);
+            if (ans) console.log(ans);
+            else console.log(`❌ Aucune réponse trouvée pour "${str}"`);
         }
     };
 
-    console.log("✅ CCNA Helper chargé. Tapez ccna('mot-clé') ou ccna(42)");
+    console.log("✅ CCNA Helper chargé. Tapez ccna(13) ou ccna('HTTPS')");
 })();
