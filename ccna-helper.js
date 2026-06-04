@@ -1,9 +1,4 @@
-// ================================
-// CCNA 1 ITNv7 Final Exam Helper
-// Fixed: accepts numbers and strings
-// Usage: ccna("mot-clé") or ccna(42)
-// ================================
-
+// CCNA Helper – corrected for numbers and strings
 (function() {
     const qa = [
         { q: "Un administrateur a défini un compte d'utilisateur local avec un mot de passe secret sur le routeur R1 pour être utiliser avec SSH. Quelles sont les trois étapes supplémentaires nécessaires pour configurer R1 pour accepter uniquement les connexions SSH chiffrées ?",
@@ -294,22 +289,19 @@
           a: "Vrai." }
     ];
 
-    // Helper: search by question number (1‑based)
     function byNumber(num) {
         if (num >= 1 && num <= qa.length) return qa[num-1];
         return null;
     }
 
-    // Helper: search by keyword (case‑insensitive)
     function byKeyword(keyword) {
         const kw = keyword.toLowerCase();
         return qa.filter((item, idx) => item.q.toLowerCase().includes(kw))
                  .map((item, idx) => ({ num: idx+1, q: item.q, a: item.a }));
     }
 
-    // Main function exposed globally
     window.ccna = function(query) {
-        // FIX: convert query to string (handles numbers directly)
+        // Convert query to string and trim (handles numbers directly)
         let q = String(query).trim();
         if (q === "") {
             console.log("Usage: ccna('numéro')  ou  ccna('mot-clé')");
